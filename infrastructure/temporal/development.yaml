@@ -1,0 +1,67 @@
+# Temporal Dynamic Configuration for Development
+# Optimized for local development and testing
+
+# Frontend configuration
+frontend.keepAliveMinTime:
+  - value: "10s"
+    constraints: {}
+
+frontend.keepAliveMaxConnectionAge:
+  - value: "5m"
+    constraints: {}
+
+# History configuration
+history.maxPageSize:
+  - value: 5000
+    constraints: {}
+
+# Matching service configuration
+matching.numTasklistWritePartitions:
+  - value: 1
+    constraints: {}
+
+matching.numTasklistReadPartitions:
+  - value: 1
+    constraints: {}
+
+# Worker configuration
+worker.recentTaskQueueActivity.TTL:
+  - value: "10m"
+    constraints: {}
+
+# System limits for development
+limit.maxIDLength:
+  - value: 1000
+    constraints: {}
+
+limit.blobSizeLimit:
+  - value: 2000000
+    constraints: {}
+
+limit.historyCountLimit:
+  - value: 50000
+    constraints: {}
+
+# Advanced visibility configuration
+system.enableReadFromSecondaryVisibility:
+  - value: false
+    constraints: {}
+
+# Archival configuration (disabled in development)
+system.enableArchivalRead:
+  - value: false
+    constraints: {}
+
+system.enableArchivalWrite:
+  - value: false
+    constraints: {}
+
+# Development optimizations
+system.enableWorkflowShadower:
+  - value: false
+    constraints: {}
+
+# Namespace cache settings
+system.namespaceRefreshRate:
+  - value: "10s"
+    constraints: {}

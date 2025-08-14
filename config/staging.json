@@ -1,0 +1,37 @@
+{
+  "environment": "staging", 
+  "resource_group": "rg-cashappagent-staging",
+  "location": "East US 2",
+  "container_registry": "crcashappagentstaging001",
+  "storage_account": "sacashappagentstage001",
+  "key_vault": "kv-cashappagent-stage-001",
+  "postgresql": {
+    "server_name": "psql-cashappagent-stage-001",
+    "database_name": "cashappagent",
+    "sku": "GP_Standard_D2s_v3",
+    "storage_mb": 32768,
+    "backup_retention_days": 7,
+    "ha_enabled": false
+  },
+  "app_services": {
+    "cle": "app-cashappagent-cle-staging",
+    "eic": "app-cashappagent-eic-staging",
+    "cm": "app-cashappagent-cm-staging", 
+    "sku": "P1v3"
+  },
+  "aks": {
+    "cluster_name": "aks-cashappagent-staging",
+    "system_node_count": 2,
+    "gpu_node_count": 1,
+    "gpu_vm_size": "Standard_NC6s_v3"
+  },
+  "business_rules": {
+    "confidence_threshold": 0.80,
+    "amount_tolerance_percent": 0.02,
+    "max_invoice_age_days": 60,
+    "auto_apply_threshold": 500.00,
+    "require_approval_above": 10000.00,
+    "max_concurrent_processing": 20,
+    "processing_timeout_seconds": 180
+  }
+}

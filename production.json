@@ -1,0 +1,56 @@
+{
+  "environment": "production",
+  "resource_group": "rg-cashappagent-production",
+  "location": "East US 2",
+  "container_registry": "crcashappagentstub001",
+  "storage_account": "sacashappagentprod001",
+  "key_vault": "kv-cashappagent-prod-001",
+  "postgresql": {
+    "server_name": "psql-cashappagent-prod-001",
+    "database_name": "cashappagent",
+    "sku": "GP_Standard_D4s_v3",
+    "storage_mb": 65536,
+    "backup_retention_days": 35,
+    "ha_enabled": true
+  },
+  "app_services": {
+    "cle": "app-cashappagent-cle-production",
+    "eic": "app-cashappagent-eic-production", 
+    "cm": "app-cashappagent-cm-production",
+    "sku": "P2v3"
+  },
+  "aks": {
+    "cluster_name": "aks-cashappagent-production",
+    "system_node_count": 3,
+    "gpu_node_count": 2,
+    "gpu_vm_size": "Standard_NC6s_v3"
+  },
+  "monitoring": {
+    "log_analytics_retention_days": 90,
+    "application_insights_sampling": 10
+  },
+  "business_rules": {
+    "confidence_threshold": 0.85,
+    "amount_tolerance_percent": 0.01,
+    "max_invoice_age_days": 90,
+    "auto_apply_threshold": 1000.00,
+    "require_approval_above": 50000.00,
+    "max_concurrent_processing": 50,
+    "processing_timeout_seconds": 300
+  },
+  "ml_configuration": {
+    "layoutlm_model": "microsoft/layoutlmv3-base",
+    "llama_model": "meta-llama/Meta-Llama-3-8B-Instruct",
+    "max_documents_per_request": 10,
+    "model_cache_size_gb": 50,
+    "gpu_memory_fraction": 0.9,
+    "batch_processing_enabled": true
+  },
+  "communication": {
+    "send_customer_emails": true,
+    "send_internal_alerts": true,
+    "email_templates": "production",
+    "slack_notifications": true,
+    "alert_escalation_minutes": 15
+  }
+}

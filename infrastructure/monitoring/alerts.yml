@@ -1,0 +1,327 @@
+# Prometheus Alerting Rules for CashAppAgent
+groups:
+  - name: cashapp_business_alerts
+    rules:
+      - alert: TransactionProcessingDown
+        expr: rate(cashapp_transactions_total[5m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: cashapp
+          team: platform
+        annotations:
+          summary: "Transaction processing has stopped"
+          description: "No transactions have been processed in the last 5 minutes. This indicates a critical system failure."
+          runbook_url: "https://docs.cashapp.com/runbooks/transaction-processing-down"
+
+      - alert: HighTransactionErrorRate
+        expr: rate(cashapp_transactions_total{status="error"}[5m]) / rate(cashapp_transactions_total[5m]) * 100 > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: cashapp
+          team: platform
+        annotations:
+          summary: "High transaction error rate detected"
+          description: "Transaction error rate is {{ $value }}%, which is above the 5% threshold."
+          runbook_url: "https://docs.cashapp.com/runbooks/high-error-rate"
+
+      - alert: LowStraightThroughProcessingRate
+        expr: cashapp_stp_rate_percent < 80
+        for: 10m
+        labels:
+          severity: warning
+          service: cashapp
+          team: business
+        annotations:
+          summary: "Straight-through processing rate is low"
+          description: "STP rate is {{ $value }}% for client {{ $labels.client_id }}, below the 80% target."
+          runbook_url: "https://docs.cashapp.com/runbooks/low-stp-rate"
+
+      - alert: HighManualReviewRate
+        expr: cashapp_manual_review_rate_percent > 20
+        for: 15m
+        labels:
+          severity: warning
+          service: cashapp
+          team: operations
+        annotations:
+          summary: "Manual review rate is high"
+          description: "Manual review rate is {{ $value }}% due to {{ $labels.reason }}, above the 20% threshold."
+          runbook_url: "https://docs.cashapp.com/runbooks/high-manual-review"
+
+      - alert: InvoiceMatchingAccuracyLow
+        expr: cashapp_invoice_matching_accuracy_ratio < 0.9
+        for: 30m
+        labels:
+          severity: warning
+          service: cle
+          team: ai
+        annotations:
+          summary: "Invoice matching accuracy is low"
+          description: "Invoice matching accuracy is {{ $value }} for client {{ $labels.client_id }}, below 90% threshold."
+          runbook_url: "https://docs.cashapp.com/runbooks/low-matching-accuracy"
+
+  - name: cashapp_system_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"cashapp.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: "{{ $labels.job }}"
+          team: platform
+        annotations:
+          summary: "CashApp service is down"
+          description: "Service {{ $labels.job }} on instance {{ $labels.instance }} is down."
+          runbook_url: "https://docs.cashapp.com/runbooks/service-down"
+
+      - alert: HighErrorRate
+        expr: rate(cashapp_http_requests_total{status_code=~"5.."}[5m]) / rate(cashapp_http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: "{{ $labels.service }}"
+          team: platform
+        annotations:
+          summary: "High HTTP error rate"
+          description: "HTTP 5xx error rate is {{ $value }}% for service {{ $labels.service }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/high-http-errors"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(cashapp_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: "{{ $labels.service }}"
+          team: platform
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is {{ $value }}s for service {{ $labels.service }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/high-response-time"
+
+      - alert: DatabaseConnectionsHigh
+        expr: cashapp_database_connections{status="active"} > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          team: platform
+        annotations:
+          summary: "High database connection count"
+          description: "Active database connections: {{ $value }} for {{ $labels.database }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/high-db-connections"
+
+      - alert: HighCPUUsage
+        expr: cashapp_system_cpu_usage_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: "{{ $labels.service }}"
+          team: platform
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% for service {{ $labels.service }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/high-cpu"
+
+      - alert: HighMemoryUsage
+        expr: (cashapp_system_memory_usage_bytes{type="used"} / (cashapp_system_memory_usage_bytes{type="used"} + cashapp_system_memory_usage_bytes{type="available"})) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: "{{ $labels.service }}"
+          team: platform
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}% for service {{ $labels.service }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/high-memory"
+
+  - name: cashapp_queue_alerts
+    rules:
+      - alert: QueueDepthHigh
+        expr: cashapp_queue_depth > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: queue
+          team: platform
+        annotations:
+          summary: "Queue depth is high"
+          description: "Queue {{ $labels.queue_name }} depth is {{ $value }} messages"
+          runbook_url: "https://docs.cashapp.com/runbooks/high-queue-depth"
+
+      - alert: DeadLetterQueueMessages
+        expr: cashapp_dlq_messages > 10
+        for: 1m
+        labels:
+          severity: critical
+          service: queue
+          team: platform
+        annotations:
+          summary: "Messages in dead letter queue"
+          description: "{{ $value }} messages in DLQ for queue {{ $labels.original_queue }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/dlq-messages"
+
+      - alert: QueueProcessingStalled
+        expr: rate(cashapp_queue_messages_consumed_total[5m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: queue
+          team: platform
+        annotations:
+          summary: "Queue processing has stalled"
+          description: "No messages consumed from queue {{ $labels.queue_name }} in 5 minutes"
+          runbook_url: "https://docs.cashapp.com/runbooks/queue-stalled"
+
+      - alert: SlowMessageProcessing
+        expr: histogram_quantile(0.95, rate(cashapp_queue_message_processing_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: queue
+          team: platform
+        annotations:
+          summary: "Slow message processing"
+          description: "95th percentile message processing time is {{ $value }}s for queue {{ $labels.queue_name }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/slow-message-processing"
+
+  - name: cashapp_workflow_alerts
+    rules:
+      - alert: WorkflowFailureRateHigh
+        expr: rate(cashapp_workflows_total{status="failed"}[10m]) / rate(cashapp_workflows_total[10m]) * 100 > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: temporal
+          team: platform
+        annotations:
+          summary: "High workflow failure rate"
+          description: "Workflow failure rate is {{ $value }}% for {{ $labels.workflow_type }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/workflow-failures"
+
+      - alert: WorkflowRetriesExcessive
+        expr: rate(cashapp_workflow_retries_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: temporal
+          team: platform
+        annotations:
+          summary: "Excessive workflow retries"
+          description: "High retry rate for {{ $labels.workflow_type }}.{{ $labels.activity_type }}: {{ $labels.failure_reason }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/workflow-retries"
+
+      - alert: LongRunningWorkflows
+        expr: cashapp_active_workflows > 100
+        for: 30m
+        labels:
+          severity: warning
+          service: temporal
+          team: platform
+        annotations:
+          summary: "Many long-running workflows"
+          description: "{{ $value }} active workflows of type {{ $labels.workflow_type }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/long-running-workflows"
+
+  - name: cashapp_erp_alerts
+    rules:
+      - alert: ERPSystemDown
+        expr: rate(cashapp_erp_operations_total{status="success"}[5m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: eic
+          team: integrations
+        annotations:
+          summary: "ERP system appears to be down"
+          description: "No successful ERP operations for {{ $labels.erp_system }} in 5 minutes"
+          runbook_url: "https://docs.cashapp.com/runbooks/erp-down"
+
+      - alert: ERPHighLatency
+        expr: histogram_quantile(0.95, rate(cashapp_erp_response_seconds_bucket[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: eic
+          team: integrations
+        annotations:
+          summary: "High ERP system latency"
+          description: "95th percentile response time is {{ $value }}s for {{ $labels.erp_system }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/erp-latency"
+
+      - alert: ERPSyncLagHigh
+        expr: cashapp_erp_sync_lag_seconds > 3600
+        for: 10m
+        labels:
+          severity: warning
+          service: eic
+          team: integrations
+        annotations:
+          summary: "ERP data sync lag is high"
+          description: "Data sync lag is {{ $value }}s for {{ $labels.erp_system }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/erp-sync-lag"
+
+  - name: cashapp_document_alerts
+    rules:
+      - alert: OCRConfidenceLow
+        expr: histogram_quantile(0.5, rate(cashapp_ocr_confidence_score_bucket[10m])) < 0.7
+        for: 10m
+        labels:
+          severity: warning
+          service: dim
+          team: ai
+        annotations:
+          summary: "OCR confidence is low"
+          description: "Median OCR confidence is {{ $value }} for {{ $labels.engine }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/low-ocr-confidence"
+
+      - alert: DocumentProcessingStalled
+        expr: rate(cashapp_documents_processed_total[5m]) == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: dim
+          team: ai
+        annotations:
+          summary: "Document processing has stalled"
+          description: "No documents processed in the last 5 minutes"
+          runbook_url: "https://docs.cashapp.com/runbooks/document-processing-stalled"
+
+      - alert: AzureOCRBudgetExceeded
+        expr: rate(cashapp_ocr_cost_usd[1h]) > 10
+        for: 1h
+        labels:
+          severity: warning
+          service: dim
+          team: ai
+        annotations:
+          summary: "Azure OCR costs are high"
+          description: "Azure OCR costs are ${{ $value }}/hour, exceeding budget"
+          runbook_url: "https://docs.cashapp.com/runbooks/high-ocr-costs"
+
+  - name: cashapp_communication_alerts
+    rules:
+      - alert: NotificationDeliveryFailures
+        expr: rate(cashapp_communications_sent_total{status="failed"}[5m]) / rate(cashapp_communications_sent_total[5m]) * 100 > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: cm
+          team: platform
+        annotations:
+          summary: "High notification delivery failure rate"
+          description: "{{ $value }}% of {{ $labels.channel }} notifications are failing"
+          runbook_url: "https://docs.cashapp.com/runbooks/notification-failures"
+
+      - alert: SlowNotificationDelivery
+        expr: histogram_quantile(0.95, rate(cashapp_notification_delivery_seconds_bucket[5m])) > 60
+        for: 5m
+        labels:
+          severity: warning
+          service: cm
+          team: platform
+        annotations:
+          summary: "Slow notification delivery"
+          description: "95th percentile delivery time is {{ $value }}s for {{ $labels.channel }}"
+          runbook_url: "https://docs.cashapp.com/runbooks/slow-notifications"

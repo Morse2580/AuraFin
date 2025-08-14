@@ -1,0 +1,59 @@
+
+# CashAppAgent Python dependencies
+# Base web framework and ASGI server
+fastapi
+uvicorn[standard]
+
+# HTTP clients and async PG driver
+httpx
+asyncpg
+psycopg2-binary
+
+# Data validation
+pydantic>=1.10
+pydantic_settings
+
+# Metrics and monitoring
+prometheus-client
+psutil
+
+# Async utilities
+aiohttp
+
+# Template rendering for emails
+jinja2
+
+# Machine learning and document processing
+torch
+pdf2image
+numpy
+transformers
+sentencepiece
+
+# Azure SDKs
+azure-storage-blob
+azure-identity
+azure-keyvault-secrets
+azure-appconfiguration
+azure-servicebus
+azure-ai-formrecognizer
+azure-core
+
+# Authentication and JWT
+PyJWT
+cryptography
+
+# Retry logic
+backoff
+
+# Testing
+pytest
+pytest-asyncio
+
+# Security and middleware
+redis[hiredis]
+starlette
+
+# Other helpers
+python-dotenv
+PyPDF2

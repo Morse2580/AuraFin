@@ -1,0 +1,16 @@
+# EIC Service - Clean Requirements
+
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+pydantic==2.11.7
+asyncpg==0.30.0
+httpx==0.28.1
+python-dotenv==1.1.1
+prometheus-client==0.22.1
+
+# ERP Integration
+requests==2.32.4
+python-dateutil==2.9.0
+xmltodict==0.14.2
+
+# NO ML DEPENDENCIES!

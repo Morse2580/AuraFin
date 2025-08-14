@@ -1,0 +1,55 @@
+# CM Service - Optimized Dependencies (No Heavy ML)
+
+# Core web framework
+fastapi
+uvicorn[standard]
+
+# HTTP clients and database
+httpx
+asyncpg
+psycopg2-binary
+
+# Data validation and settings
+pydantic>=1.10
+pydantic_settings
+
+# Metrics and monitoring
+prometheus-client
+psutil
+
+# Async utilities
+aiohttp
+
+# Template and auth
+jinja2
+PyJWT
+cryptography
+
+# Retry logic and testing
+backoff
+pytest
+pytest-asyncio
+
+# Security and middleware
+redis[hiredis]
+starlette
+
+# Utilities
+python-dotenv
+
+# Communication specific
+# Email and messaging - lightweight libraries
+emails
+markdown
+beautifulsoup4
+
+# Microsoft Graph integration (lightweight)
+# azure-identity  # Only if needed for MS Graph
+# requests-oauthlib  # Only if needed for OAuth
+
+# NOTE: Removed heavy ML dependencies:
+# - torch (2.5GB)
+# - transformers (500MB)
+# - pdf2image (100MB)  
+# - numpy (unless needed for data processing)
+# - All heavy Azure AI services

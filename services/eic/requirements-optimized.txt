@@ -1,0 +1,52 @@
+# EIC Service - Optimized Dependencies (No Heavy ML)
+
+# Core web framework
+fastapi
+uvicorn[standard]
+
+# HTTP clients and database  
+httpx
+asyncpg
+psycopg2-binary
+
+# Data validation and settings
+pydantic>=1.10
+pydantic_settings
+
+# Metrics and monitoring
+prometheus-client
+psutil
+
+# Async utilities
+aiohttp
+
+# Template and auth
+jinja2
+PyJWT
+cryptography
+
+# Retry logic and testing
+backoff
+pytest
+pytest-asyncio
+
+# Security and middleware
+redis[hiredis]
+starlette
+
+# Utilities
+python-dotenv
+requests
+
+# ERP Integration specific
+# These are lightweight business logic libraries
+python-dateutil
+xmltodict
+openpyxl
+
+# NOTE: Removed heavy ML dependencies:
+# - torch (2.5GB)
+# - transformers (500MB) 
+# - pdf2image (100MB)
+# - sentencepiece (50MB)
+# - All Azure AI services except core

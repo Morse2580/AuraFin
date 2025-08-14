@@ -1,0 +1,47 @@
+# terraform/terraform.tfvars.example
+
+# Copy this file to terraform.tfvars and customize for your environment
+
+# Basic configuration
+environment      = "dev"
+location        = "East US 2"
+business_owner  = "finance-team@company.com"
+technical_owner = "devops-team@company.com"
+
+# Network configuration
+vnet_address_space = ["10.0.0.0/16"]
+enable_ddos_protection = false
+management_ip_ranges = [
+  "1.2.3.4/32",  # Your office IP
+  "5.6.7.8/32"   # VPN gateway IP
+]
+
+# Database configuration
+postgresql_sku_name = "GP_Standard_D2s_v3"
+postgresql_storage_mb = 32768
+postgresql_backup_retention_days = 30
+postgresql_ha_enabled = false
+
+# Storage configuration
+storage_replication_type = "LRS"
+blob_soft_delete_days = 30
+
+# App Service configuration
+app_service_sku_name = "P1v3"
+
+# Kubernetes configuration
+aks_system_node_count = 2
+aks_gpu_node_count = 1
+aks_gpu_vm_size = "Standard_NC6s_v3"
+aks_admin_group_ids = ["your-azure-ad-group-id"]
+
+# Monitoring configuration
+log_analytics_retention_days = 90
+ops_team_email = "ops-team@company.com"
+slack_webhook_url = "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+
+# Additional tags
+tags = {
+  CostCenter = "IT"
+  Owner      = "DevOps Team"
+}

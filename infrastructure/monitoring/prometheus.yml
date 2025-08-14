@@ -1,0 +1,103 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts.yml"
+
+alerting:
+  alertmanagers:
+    - timeout: 10s
+      static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'cashapp-orchestrator'
+    static_configs:
+      - targets: ['orchestrator:8005']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'cashapp-cle'
+    static_configs:
+      - targets: ['cle:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'cashapp-dim'
+    static_configs:
+      - targets: ['dim:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'cashapp-eic'
+    static_configs:
+      - targets: ['eic:8003']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'cashapp-cm'
+    static_configs:
+      - targets: ['cm:8004']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'cashapp-gateway'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 60s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 60s
+
+  # Temporal metrics
+  - job_name: 'temporal'
+    static_configs:
+      - targets: ['temporal:7233']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Blackbox exporter for health checks
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://orchestrator:8005/health
+        - http://cle:8001/health
+        - http://dim:8002/health
+        - http://eic:8003/health
+        - http://cm:8004/health
+        - http://nginx:80/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

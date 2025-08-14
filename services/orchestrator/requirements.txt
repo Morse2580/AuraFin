@@ -1,0 +1,21 @@
+# Temporal Workflow Dependencies
+temporalio==1.4.0
+fastapi
+uvicorn[standard]
+httpx
+asyncpg
+pydantic>=1.10
+pydantic_settings
+
+# Queue integration
+kombu
+pika
+
+# Monitoring
+prometheus-client
+psutil
+
+# Utilities
+python-dotenv
+backoff
+PyJWT

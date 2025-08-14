@@ -1,0 +1,31 @@
+# DIM Service - Production ML Stack (NO PYTORCH!)
+
+# Core FastAPI Stack
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+pydantic==2.11.7
+pydantic_settings==2.10.1
+
+# Database & HTTP
+asyncpg==0.30.0
+httpx==0.28.1
+
+# Core ML Stack (Lightweight)
+onnxruntime==1.15.0
+transformers==4.45.2
+numpy==2.3.2
+
+# Azure ML Services
+azure-ai-formrecognizer==3.3.3
+azure-core==1.35.0
+azure-identity==1.24.0
+
+# Utilities
+python-dotenv==1.1.1
+regex==2025.7.34
+prometheus-client==0.22.1
+
+# Text Processing
+huggingface_hub==0.34.4
+
+# NO PYTORCH - NO TORCH - NO TORCHVISION - NO HEAVY ML!

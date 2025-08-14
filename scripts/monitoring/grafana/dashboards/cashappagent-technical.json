@@ -1,0 +1,138 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CashAppAgent - Technical Metrics",
+    "tags": ["cashappagent", "technical", "performance"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Service Health",
+        "type": "stat",
+        "targets": [
+          {"expr": "up{job=\"cashappagent-cle\"}", "legendFormat": "CLE"},
+          {"expr": "up{job=\"cashappagent-dim\"}", "legendFormat": "DIM"},
+          {"expr": "up{job=\"cashappagent-eic\"}", "legendFormat": "EIC"},
+          {"expr": "up{job=\"cashappagent-cm\"}", "legendFormat": "CM"}
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"options": {"0": {"text": "DOWN"}}, "type": "value"},
+              {"options": {"1": {"text": "UP"}}, "type": "value"}
+            ],
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "API Response Times",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"cashappagent-cle\"}[5m])) * 1000",
+            "legendFormat": "CLE 95th"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"cashappagent-dim\"}[5m])) * 1000", 
+            "legendFormat": "DIM 95th"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"cashappagent-eic\"}[5m])) * 1000",
+            "legendFormat": "EIC 95th"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"cashappagent-cm\"}[5m])) * 1000",
+            "legendFormat": "CM 95th"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "ms"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6}
+      },
+      {
+        "id": 3,
+        "title": "Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes{name=~\"cashapp-.*\"} / 1024 / 1024",
+            "legendFormat": "{{name}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "decmbytes"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6}
+      },
+      {
+        "id": 4,
+        "title": "GPU Metrics (DIM Service)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "nvidia_gpu_utilization_percentage",
+            "legendFormat": "GPU Utilization %"
+          },
+          {
+            "expr": "(nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes) * 100",
+            "legendFormat": "GPU Memory %"
+          },
+          {
+            "expr": "nvidia_gpu_temperature_celsius",
+            "legendFormat": "GPU Temperature °C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14}
+      },
+      {
+        "id": 5,
+        "title": "Database Performance",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "postgres_active_connections",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "rate(postgres_transactions_total[5m])",
+            "legendFormat": "Transactions/sec"
+          },
+          {
+            "expr": "postgres_slow_queries",
+            "legendFormat": "Slow Queries"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14}
+      }
+    ],
+    "time": {"from": "now-1h", "to": "now"},
+    "refresh": "15s"
+  }
+}

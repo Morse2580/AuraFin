@@ -1,0 +1,382 @@
+
+# monitoring/prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # CashAppAgent services
+  - job_name: 'cashappagent-cle'
+    static_configs:
+      - targets: ['cle:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  - job_name: 'cashappagent-dim'
+    static_configs:
+      - targets: ['dim:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 15s
+
+  - job_name: 'cashappagent-eic'
+    static_configs:
+      - targets: ['eic:8003']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  - job_name: 'cashappagent-cm'
+    static_configs:
+      - targets: ['cm:8004']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Infrastructure services
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # NVIDIA GPU metrics (for DIM service)
+  - job_name: 'nvidia-gpu'
+    static_configs:
+      - targets: ['nvidia-dcgm-exporter:9400']
+
+---
+# monitoring/alert_rules.yml
+groups:
+  - name: cashappagent.rules
+    rules:
+      # Business Metrics Alerts
+      - alert: LowPaymentProcessingRate
+        expr: rate(cle_transactions_processed_total[10m]) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: cle
+        annotations:
+          summary: "Low payment processing rate detected"
+          description: "Payment processing rate has dropped below 0.1 transactions per second for 5 minutes"
+
+      - alert: HighPaymentProcessingLatency
+        expr: histogram_quantile(0.95, rate(cle_processing_duration_ms_bucket[5m])) > 5000
+        for: 2m
+        labels:
+          severity: critical
+          service: cle
+        annotations:
+          summary: "High payment processing latency"
+          description: "95th percentile processing time is above 5 seconds"
+
+      - alert: LowMatchingAccuracy
+        expr: (rate(cle_matches_successful_total[30m]) / rate(cle_transactions_processed_total[30m])) < 0.85
+        for: 10m
+        labels:
+          severity: warning
+          service: cle
+        annotations:
+          summary: "Matching accuracy below threshold"
+          description: "Payment matching accuracy has dropped below 85% over the last 30 minutes"
+
+      # ML Model Alerts
+      - alert: DocumentProcessingFailure
+        expr: rate(dim_processing_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: dim
+        annotations:
+          summary: "High document processing failure rate"
+          description: "Document processing error rate is above 10% for 2 minutes"
+
+      - alert: MLModelLoadingFailure
+        expr: dim_model_load_failures_total > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: dim
+        annotations:
+          summary: "ML model failed to load"
+          description: "One or more ML models failed to load in the DIM service"
+
+      - alert: HighGPUUtilization
+        expr: nvidia_gpu_utilization_percentage > 95
+        for: 10m
+        labels:
+          severity: warning
+          service: dim
+        annotations:
+          summary: "High GPU utilization"
+          description: "GPU utilization is above 95% for 10 minutes"
+
+      - alert: GPUMemoryExhaustion
+        expr: (nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          service: dim
+        annotations:
+          summary: "GPU memory nearly exhausted"
+          description: "GPU memory usage is above 90% for 5 minutes"
+
+      # ERP Integration Alerts
+      - alert: ERPConnectionFailure
+        expr: eic_erp_connection_failures_total > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: eic
+        annotations:
+          summary: "ERP connection failure detected"
+          description: "Failed to connect to one or more ERP systems"
+
+      - alert: HighERPResponseTime
+        expr: histogram_quantile(0.95, rate(eic_erp_request_duration_ms_bucket[5m])) > 10000
+        for: 5m
+        labels:
+          severity: warning
+          service: eic
+        annotations:
+          summary: "High ERP response time"
+          description: "95th percentile ERP response time is above 10 seconds"
+
+      # Communication Alerts
+      - alert: EmailDeliveryFailure
+        expr: rate(cm_email_failures_total[10m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: cm
+        annotations:
+          summary: "Email delivery failure rate high"
+          description: "Email failure rate is above 5% for 2 minutes"
+
+      - alert: SlackNotificationFailure
+        expr: cm_slack_failures_total > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: cm
+        annotations:
+          summary: "Slack notification failure"
+          description: "Failed to send Slack notifications"
+
+      # Infrastructure Alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service is down"
+          description: "{{ $labels.job }} service has been down for more than 1 minute"
+
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Container memory usage is above 90% for 5 minutes"
+
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "Container CPU usage is above 80% for 10 minutes"
+
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: postgres_active_connections / postgres_max_connections > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          service: postgres
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "PostgreSQL connection pool usage is above 90%"
+
+      - alert: RedisMemoryHigh
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis memory usage is above 90% for 5 minutes"
+
+---
+# monitoring/grafana/dashboards/cashappagent-overview.json
+{
+  "dashboard": {
+    "id": null,
+    "title": "CashAppAgent - Business Overview",
+    "tags": ["cashappagent", "business", "overview"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Payment Processing Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(cle_transactions_processed_total[1h]) * 3600",
+            "legendFormat": "Payments/Hour"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 10},
+                {"color": "green", "value": 50}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Automation Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "(rate(cle_matches_successful_total[1h]) / rate(cle_transactions_processed_total[1h])) * 100",
+            "legendFormat": "Automation %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 80},
+                {"color": "green", "value": 95}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Processing Time Distribution",
+        "type": "histogram",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(cle_processing_duration_ms_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.90, rate(cle_processing_duration_ms_bucket[5m]))",
+            "legendFormat": "90th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(cle_processing_duration_ms_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "ms"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Daily Transaction Volume",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "increase(cle_transactions_processed_total[1d])",
+            "legendFormat": "Total Transactions"
+          },
+          {
+            "expr": "increase(cle_matches_successful_total[1d])",
+            "legendFormat": "Auto-Matched"
+          },
+          {
+            "expr": "increase(cle_manual_review_total[1d])",
+            "legendFormat": "Manual Review"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Financial Impact",
+        "type": "timeseries", 
+        "targets": [
+          {
+            "expr": "increase(cle_total_amount_processed[1d])",
+            "legendFormat": "Total Amount Processed"
+          },
+          {
+            "expr": "increase(cle_total_amount_matched[1d])",
+            "legendFormat": "Auto-Matched Amount"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "currencyUSD"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Error Analysis",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (error_type) (increase(cle_processing_errors_total[24h]))",
+            "legendFormat": "{{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      }
+    ],
+    "time": {"from": "now-24h", "to": "now"},
+    "refresh": "30s"
+  }
+}

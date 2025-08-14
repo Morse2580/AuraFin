@@ -1,0 +1,437 @@
+
+services:
+  # =============================================================================
+  # DATABASE SERVICES
+  # =============================================================================
+  
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: cashapp
+      POSTGRES_USER: cashapp_user
+      POSTGRES_PASSWORD: dev_password_123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cashapp_user -d cashapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cashapp-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cashapp-network
+
+  # =============================================================================
+  # MESSAGE QUEUE SERVICES
+  # =============================================================================
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks:
+      - cashapp-network
+
+  # =============================================================================
+  # WORKFLOW ORCHESTRATION SERVICES
+  # =============================================================================
+
+  temporal:
+    image: temporalio/auto-setup:1.22
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=cashapp_user
+      - POSTGRES_PWD=dev_password_123
+      - POSTGRES_SEEDS=postgres
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+    ports:
+      - "7233:7233"   # Temporal server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./infrastructure/temporal:/etc/temporal/config/dynamicconfig
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  temporal-ui:
+    image: temporalio/ui:latest
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    ports:
+      - "8085:8080"   # Temporal UI (changed to avoid conflict)
+    depends_on:
+      - temporal
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  # =============================================================================
+  # CORE APPLICATION SERVICES
+  # =============================================================================
+
+  # Orchestrator Service (NEW)
+  orchestrator:
+    build:
+      context: .
+      dockerfile: services/orchestrator/Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://cashapp_user:dev_password_123@postgres:5432/cashapp
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+      - TEMPORAL_HOST=temporal:7233
+      - DIM_BASE_URL=http://dim:8002
+      - EIC_BASE_URL=http://eic:8003
+      - CLE_BASE_URL=http://cle:8001
+      - CM_BASE_URL=http://cm:8004
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      - SERVICE_TOKEN=${SERVICE_TOKEN:-dev-token-123}
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  cle:
+    build:
+      context: .
+      dockerfile: services/cle/Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://cashapp_user:dev_password_123@postgres:5432/cashapp
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+      - TEMPORAL_HOST=temporal:7233
+      - DIM_BASE_URL=http://dim:8002
+      - EIC_BASE_URL=http://eic:8003
+      - CM_BASE_URL=http://cm:8004
+      - ORCHESTRATOR_BASE_URL=http://orchestrator:8005
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=development
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  dim:
+    build:
+      context: .
+      dockerfile: services/dim/Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://cashapp_user:dev_password_123@postgres:5432/cashapp
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=development
+      - CUDA_VISIBLE_DEVICES=0
+      # Hybrid OCR Configuration
+      - USE_TESSERACT_FIRST=true
+      - TESSERACT_QUALITY_THRESHOLD=0.7
+      - AZURE_FORM_RECOGNIZER_ENDPOINT=http://dummy.cognitiveservices.azure.com/
+      - AZURE_FORM_RECOGNIZER_KEY=dummy-key-for-testing
+      - OCR_COST_BUDGET_PER_PAGE=0.005
+      - OCR_PROCESSING_STRATEGY=cost_optimized
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 120s
+    volumes:
+      - ./models:/app/models  # For storing ML models
+      - /tmp:/tmp             # For temporary file processing
+    # Uncomment for GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  eic:
+    build:
+      context: .
+      dockerfile: services/eic/Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://cashapp_user:dev_password_123@postgres:5432/cashapp
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=development
+      # ERP Credentials (encrypted in production)
+      - NETSUITE_CLIENT_ID=${NETSUITE_CLIENT_ID:-dummy}
+      - NETSUITE_CLIENT_SECRET=${NETSUITE_CLIENT_SECRET:-dummy}
+      - SAP_API_KEY=${SAP_API_KEY:-dummy}
+      - ORACLE_ERP_ENDPOINT=${ORACLE_ERP_ENDPOINT:-dummy}
+      - ORACLE_ERP_USERNAME=${ORACLE_ERP_USERNAME:-dummy}
+      - ORACLE_ERP_PASSWORD=${ORACLE_ERP_PASSWORD:-dummy}
+      - QUICKBOOKS_OAUTH_TOKEN=${QUICKBOOKS_OAUTH_TOKEN:-dummy}
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  cm:
+    build:
+      context: .
+      dockerfile: services/cm/Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://cashapp_user:dev_password_123@postgres:5432/cashapp
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=development
+      # Communication service credentials
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-dummy}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-dummy}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-dummy}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-dummy}
+      - TEAMS_WEBHOOK_URL=${TEAMS_WEBHOOK_URL:-dummy}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-dummy}
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  # =============================================================================
+  # API GATEWAY & LOAD BALANCER
+  # =============================================================================
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/proxy_params:/etc/nginx/proxy_params:ro
+    depends_on:
+      - orchestrator
+      - cle
+      - dim
+      - eic
+      - cm
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  # =============================================================================
+  # MONITORING & OBSERVABILITY
+  # =============================================================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+    depends_on:
+      - orchestrator
+      - cle
+      - dim
+      - eic
+      - cm
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./infrastructure/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    environment:
+      - SLACK_API_URL=https://example.com/webhook
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel,grafana-clock-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infrastructure/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+  # Node exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - cashapp-network
+    restart: unless-stopped
+
+# =============================================================================
+# NETWORKS & VOLUMES
+# =============================================================================
+
+networks:
+  cashapp-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  temporal_data:
+    driver: local
+  models_data:
+    driver: local
