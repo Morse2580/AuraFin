@@ -53,9 +53,9 @@ resource "azurerm_linux_web_app" "cle" {
       docker_registry_url = "https://${azurerm_container_registry.main.login_server}"
     }
     
-    # CORS settings
+    # CORS settings - allow all origins for demo
     cors {
-      allowed_origins = ["https://${azurerm_linux_web_app.frontend.default_hostname}"]
+      allowed_origins = ["*"]
     }
     
     # IP restrictions
@@ -77,12 +77,7 @@ resource "azurerm_linux_web_app" "cle" {
   }
   
   # VNet integration
-  dynamic "virtual_network_subnet_id" {
-    for_each = var.enable_app_service_vnet_integration ? [azurerm_subnet.app.id] : []
-    content {
-      virtual_network_subnet_id = virtual_network_subnet_id.value
-    }
-  }
+  virtual_network_subnet_id = var.enable_app_service_vnet_integration ? azurerm_subnet.app.id : null
   
   tags = local.common_tags
 }

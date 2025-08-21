@@ -17,13 +17,13 @@ terraform {
     }
   }
 
-  backend "azurerm" {
-    # Configure this with your storage account details
-    # resource_group_name  = "rg-cashappagent-tfstate"
-    # storage_account_name = "sacashappagentstate"
-    # container_name       = "tfstate"
-    # key                  = "cashappagent.tfstate"
-  }
+  # Using local backend for demo deployment
+  # backend "azurerm" {
+  #   resource_group_name  = "rg-cashappagent-tfstate"
+  #   storage_account_name = "sacashappagentstate"
+  #   container_name       = "tfstate"
+  #   key                  = "cashappagent.tfstate"
+  # }
 }
 
 # Configure Azure Provider

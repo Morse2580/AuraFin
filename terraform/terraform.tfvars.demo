@@ -1,0 +1,66 @@
+# terraform/terraform.tfvars.demo
+# EABL MVP Demo Environment Configuration
+
+# Basic configuration
+environment      = "demo"
+location        = "East US 2"
+business_owner  = "partnerships@cashup.eabl.co.ke" 
+technical_owner = "devops@cashup.agent"
+
+# Network configuration  
+vnet_address_space = ["10.1.0.0/16"]  # Different from dev to avoid conflicts
+enable_ddos_protection = false
+management_ip_ranges = [
+  # Add EABL office IP ranges here
+  "0.0.0.0/0"  # Temporarily open for demo - restrict in production
+]
+
+# Database configuration (Basic tier for demo)
+postgresql_sku_name = "B_Standard_B1ms"  # 1 vCore, 2GB RAM - $25/month
+postgresql_storage_mb = 32768      # 32GB storage
+postgresql_backup_retention_days = 7  # Minimal for demo
+postgresql_ha_enabled = false     # No HA needed for demo
+
+# Storage configuration (Basic for cost)
+storage_replication_type = "LRS"  # Locally redundant storage
+blob_soft_delete_days = 7         # Short retention for demo
+
+# App Service configuration (Basic tier)
+app_service_sku_name = "B2"       # 2 vCPUs, 3.5GB RAM - $73/month
+
+# Kubernetes configuration (Minimal for demo)
+aks_system_node_count = 1         # Single node for demo
+aks_gpu_node_count = 0           # No GPU nodes in demo (use CPU-only ML)
+aks_gpu_vm_size = "Standard_D2s_v3"
+aks_admin_group_ids = []          # Configure with your Azure AD group
+
+# Monitoring configuration (Basic)
+log_analytics_retention_days = 30  # Short retention for demo
+ops_team_email = "alerts@cashup.agent"
+slack_webhook_url = "https://hooks.slack.com/services/YOUR/DEMO/WEBHOOK"
+
+# Demo-specific configuration (commented out for initial deployment)
+# enable_public_access = true       # Allow public access for EABL testing
+# demo_mode = true                  # Enable demo features
+# eabl_testing = true               # EABL-specific features
+
+# Cost optimization tags
+tags = {
+  Environment    = "demo"
+  Project        = "EABL-MVP-Demo"  
+  CostCenter     = "Sales"
+  Owner          = "Partnerships Team"
+  Purpose        = "Customer Demo"
+  DeleteAfter    = "2024-10-20"    # Auto-cleanup reminder
+  Customer       = "EABL"
+  Budget         = "150-USD-monthly"
+}
+
+# Demo-specific features (commented out for initial deployment)
+# demo_features = {
+#   document_upload_ui = true        # Enable web upload interface
+#   cost_dashboard = true            # Show cost optimization metrics  
+#   api_playground = true            # Interactive API testing
+#   monitoring_dashboard = true      # Live system monitoring
+#   sample_data = true              # Include demo documents
+# }

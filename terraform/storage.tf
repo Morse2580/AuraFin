@@ -104,15 +104,16 @@ resource "azurerm_container_registry" "main" {
   public_network_access_enabled = false
   network_rule_bypass_option    = "AzureServices"
   
-  # Content trust and vulnerability scanning
-  trust_policy {
-    enabled = true
-  }
+  # Content trust and vulnerability scanning (Premium SKU only)
+  # trust_policy {
+  #   enabled = true
+  # }
   
-  retention_policy {
-    days    = var.acr_retention_days
-    enabled = true
-  }
+  # Retention policy only available in Premium SKU
+  # retention_policy {
+  #   days    = var.acr_retention_days
+  #   enabled = true
+  # }
   
   tags = local.common_tags
 }

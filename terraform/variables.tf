@@ -2,12 +2,12 @@
 
 # Environment and basic configuration
 variable "environment" {
-  description = "Environment name (dev, staging, production)"
+  description = "Environment name (dev, staging, production, demo)"
   type        = string
   
   validation {
-    condition     = contains(["dev", "staging", "production"], var.environment)
-    error_message = "Environment must be dev, staging, or production."
+    condition     = contains(["dev", "staging", "production", "demo"], var.environment)
+    error_message = "Environment must be dev, staging, production, or demo."
   }
 }
 
