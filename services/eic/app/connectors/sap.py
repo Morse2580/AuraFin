@@ -2,7 +2,7 @@
 
 # services/eic/app/connectors/sap.py
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import aiohttp
 import json
 from datetime import datetime, timedelta

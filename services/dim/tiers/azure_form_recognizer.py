@@ -220,6 +220,7 @@ class AzureFormRecognizer:
     
     async def _fallback_extraction(self, start_time: float) -> AzureFormResult:
         """Fallback when Azure service is not available"""
+        import time
         processing_time_ms = int((time.time() - start_time) * 1000)
         
         return AzureFormResult(

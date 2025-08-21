@@ -1,0 +1,70 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # System metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # CashUp Agent Services
+  - job_name: 'cashup-cle'
+    static_configs:
+      - targets: ['host.docker.internal:8011']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'cashup-orchestrator'
+    static_configs:
+      - targets: ['host.docker.internal:8006']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'cashup-dim'
+    static_configs:
+      - targets: ['host.docker.internal:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'cashup-eic'
+    static_configs:
+      - targets: ['host.docker.internal:8003']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'cashup-cm'
+    static_configs:
+      - targets: ['host.docker.internal:8004']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Infrastructure Services
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['host.docker.internal:5433']
+    scrape_interval: 30s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['host.docker.internal:6380']
+    scrape_interval: 30s

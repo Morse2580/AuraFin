@@ -11,10 +11,10 @@ from dataclasses import dataclass
 from enum import Enum
 import random
 
-from .config.model_config import get_model_config, get_enabled_tiers, is_e2e_mode, is_production_mode, ModelTier
-from .tiers.pattern_matcher import PatternMatcher, PatternMatchResult
-from .tiers.layoutlm_onnx import LayoutLMONNX, LayoutLMResult
-from .tiers.azure_form_recognizer import AzureFormRecognizer, AzureFormResult
+from services.dim.config.model_config import get_model_config, get_enabled_tiers, is_e2e_mode, is_production_mode, ModelTier
+from services.dim.tiers.pattern_matcher import PatternMatcher, PatternMatchResult
+from services.dim.tiers.layoutlm_onnx import LayoutLMONNX, LayoutLMResult
+from services.dim.tiers.azure_form_recognizer import AzureFormRecognizer, AzureFormResult
 
 logger = logging.getLogger(__name__)
 

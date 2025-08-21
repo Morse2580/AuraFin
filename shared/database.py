@@ -10,7 +10,7 @@ from typing import List, Dict, Any, Optional
 from contextlib import asynccontextmanager
 import os
 from .logging import setup_logging
-from .exception import CashAppException
+from .exceptions import CashAppException
 
 logger = setup_logging("database-utils")
 

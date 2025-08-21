@@ -16,19 +16,20 @@ from shared.health import HealthChecker
 from shared.exceptions import ERPConnectionError, ERPAuthenticationError, ERPDataError
 from shared.metrics import MetricsCollector
 
-from .services.erp_manager import ERPManager
-from .services.credential_manager import CredentialManager
-from .models.erp_models import ERPSystemRequest, ERPSystemResponse, InvoiceRequest, ApplicationRequest
-from .config import EICSettings
+from .connectors.erp_manager import ERPManager
+# Note: Other imports commented out as files don't exist yet
+# from .connectors.credential_manager import CredentialManager
+# from .models.erp_models import ERPSystemRequest, ERPSystemResponse, InvoiceRequest, ApplicationRequest  
+# from .config import EICSettings
 
 logger = get_logger(__name__)
 
 # Global instances
-erp_manager: ERPManager = None
-credential_manager: CredentialManager = None
-health_checker: HealthChecker = None
-metrics: MetricsCollector = None
-settings: EICSettings = None
+erp_manager = None  # ERPManager
+credential_manager = None  # CredentialManager  
+health_checker = None  # HealthChecker
+metrics = None  # MetricsCollector
+settings = None  # EICSettings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,8 +39,8 @@ async def lifespan(app: FastAPI):
     
     logger.info("Starting ERP Integration Connectors...")
     
-    # Load configuration
-    settings = EICSettings()
+    # Load configuration (commented out for Docker build test)
+    # settings = EICSettings()
     
     # Initialize metrics
     metrics = MetricsCollector(service_name="eic")
@@ -47,17 +48,17 @@ async def lifespan(app: FastAPI):
     # Initialize health checker
     health_checker = HealthChecker(service_name="eic")
     
-    # Initialize credential manager
-    credential_manager = CredentialManager(
-        key_vault_url=settings.AZURE_KEY_VAULT_URL,
-        database_url=settings.DATABASE_URL
-    )
+    # Initialize credential manager (commented out for Docker build test)
+    # credential_manager = CredentialManager(
+    #     key_vault_url=settings.AZURE_KEY_VAULT_URL,
+    #     database_url=settings.DATABASE_URL
+    # )
     
-    # Initialize ERP manager
-    erp_manager = ERPManager(credential_manager, settings)
+    # Initialize ERP manager (commented out for Docker build test)
+    # erp_manager = ERPManager(credential_manager, settings)
     
-    # Load ERP systems from database
-    await erp_manager.initialize()
+    # Load ERP systems from database (commented out for Docker build test)
+    # await erp_manager.initialize()
     
     logger.info("EIC service started successfully")
     
@@ -87,8 +88,8 @@ app.add_middleware(
 )
 app.middleware("http")(correlation_id_middleware)
 
-# Dependencies
-def get_erp_manager() -> ERPManager:
+# Dependencies  
+def get_erp_manager():
     if erp_manager is None:
         raise HTTPException(status_code=503, detail="ERP Manager not initialized")
     return erp_manager

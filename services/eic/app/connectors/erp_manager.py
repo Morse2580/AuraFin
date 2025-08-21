@@ -10,7 +10,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
 
 from shared.logging_config import get_logger
-from shared.exception import ERPConnectionError, ERPAuthenticationError, ERPDataError
+from shared.exceptions import ERPConnectionError, ERPAuthenticationError, ERPDataError
 from shared.models import Invoice, MatchResult
 
 from .netsuite import NetSuiteConnector

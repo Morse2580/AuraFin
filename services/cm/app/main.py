@@ -18,8 +18,8 @@ from shared.metrics import MetricsCollector
 from .services.email_service import EmailService
 from .services.slack_client import SlackClient
 from .services.microsoft_graph_client import MicrosoftGraphClient
-from .services.template_manager import EmailTemplateManager
-from .models.communication_models import (
+# from .services.template_manager import EmailTemplateManager  # File doesn't exist yet
+from .communication_models import (
     ClarificationEmailRequest,
     InternalAlertRequest, 
     BatchNotificationRequest,

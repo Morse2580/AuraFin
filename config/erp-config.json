@@ -1,0 +1,96 @@
+{
+  "erp_systems": {
+    "sap": {
+      "enabled": false,
+      "connection_type": "odata",
+      "base_url": "https://your-sap-server.com:8000/sap/opu/odata/sap/",
+      "service_name": "API_PURCHASE_ORDER_PROCESS_SRV",
+      "username": "",
+      "password": "",
+      "client": "100",
+      "language": "EN",
+      "timeout": 30,
+      "read_only": true,
+      "test_endpoint": "/PurchaseOrder?$top=1"
+    },
+    "netsuite": {
+      "enabled": false,
+      "connection_type": "rest",
+      "account_id": "",
+      "consumer_key": "",
+      "consumer_secret": "",
+      "token_id": "",
+      "token_secret": "",
+      "base_url": "https://{account_id}.suitetalk.api.netsuite.com/services/rest/record/v1/",
+      "timeout": 30,
+      "read_only": true,
+      "test_endpoint": "invoice?limit=1"
+    },
+    "oracle": {
+      "enabled": false,
+      "connection_type": "rest",
+      "base_url": "https://your-oracle-cloud.com/fscmRestApi/resources/",
+      "username": "",
+      "password": "",
+      "timeout": 30,
+      "read_only": true,
+      "test_endpoint": "11.13.18.05/payablesInvoices?limit=1"
+    },
+    "dynamics": {
+      "enabled": false,
+      "connection_type": "odata",
+      "base_url": "https://your-dynamics.crm.dynamics.com/api/data/v9.2/",
+      "tenant_id": "",
+      "client_id": "",
+      "client_secret": "",
+      "timeout": 30,
+      "read_only": true,
+      "test_endpoint": "invoices?$top=1"
+    },
+    "quickbooks": {
+      "enabled": false,
+      "connection_type": "rest",
+      "base_url": "https://sandbox-quickbooks.api.intuit.com/v3/company/{company_id}/",
+      "company_id": "",
+      "access_token": "",
+      "refresh_token": "",
+      "timeout": 30,
+      "read_only": true,
+      "test_endpoint": "invoices?maxresults=1"
+    },
+    "custom": {
+      "enabled": false,
+      "connection_type": "rest",
+      "base_url": "",
+      "authentication": {
+        "type": "bearer|basic|api_key",
+        "token": "",
+        "username": "",
+        "password": "",
+        "api_key_header": "X-API-Key"
+      },
+      "timeout": 30,
+      "read_only": true,
+      "test_endpoint": ""
+    }
+  },
+  "default_system": "sap",
+  "connection_settings": {
+    "retry_attempts": 3,
+    "retry_delay": 1,
+    "connection_pool_size": 5,
+    "verify_ssl": true,
+    "log_requests": false
+  },
+  "data_mapping": {
+    "invoice_fields": {
+      "invoice_id": ["InvoiceNumber", "DocumentNumber", "ID", "invoice_id"],
+      "vendor_name": ["VendorName", "SupplierName", "vendor", "supplier"],
+      "amount": ["Amount", "TotalAmount", "NetAmount", "total"],
+      "currency": ["Currency", "CurrencyCode", "currency"],
+      "date": ["InvoiceDate", "DocumentDate", "CreatedDate", "date"],
+      "status": ["Status", "DocumentStatus", "PaymentStatus", "status"],
+      "po_number": ["PurchaseOrder", "PONumber", "ReferenceNumber", "po_number"]
+    }
+  }
+}

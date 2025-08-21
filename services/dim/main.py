@@ -29,6 +29,9 @@ from shared.database import DatabaseManager
 from shared.models import HealthResponse
 
 # Import new three-tier document intelligence system
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
 from document_intelligence_engine import DocumentIntelligenceEngine
 from config.model_config import get_model_config, is_e2e_mode, is_production_mode
 
@@ -113,7 +116,8 @@ async def lifespan(app: FastAPI):
     try:
         # Initialize database connection
         try:
-            db_manager = DatabaseManager()
+            database_url = os.getenv("DATABASE_URL", "postgresql://cashapp_user:dev_password_123@localhost:5432/cashapp")
+            db_manager = DatabaseManager(database_url)
             await db_manager.initialize()
             logger.info("Database connection initialized")
         except Exception as e:

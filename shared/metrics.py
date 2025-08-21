@@ -7,6 +7,7 @@ Standardized metrics collection across all services
 
 from prometheus_client import Counter, Histogram, Gauge, Info
 import time
+import asyncio
 from functools import wraps
 from typing import Dict, Any
 from .logging import get_correlation_id
@@ -160,3 +161,41 @@ def track_business_metrics(transaction_status: str, processing_time: float,
         service=service_name,
         transaction_type="payment_matching"
     ).observe(processing_time)
+
+
+class MetricsCollector:
+    """
+    Centralized metrics collection for services
+    """
+    
+    def __init__(self, service_name: str):
+        self.service_name = service_name
+        
+    def increment_request_count(self, endpoint: str, method: str = "POST", status: str = "success"):
+        """Increment request counter"""
+        REQUEST_COUNT.labels(
+            service=self.service_name,
+            endpoint=endpoint,
+            method=method,
+            status=status
+        ).inc()
+        
+    def record_request_duration(self, endpoint: str, duration: float, method: str = "POST"):
+        """Record request duration"""
+        REQUEST_DURATION.labels(
+            service=self.service_name,
+            endpoint=endpoint,
+            method=method
+        ).observe(duration)
+        
+    def increment_error_count(self, error_type: str, error_code: str = "UNKNOWN"):
+        """Increment error counter"""
+        ERROR_COUNT.labels(
+            service=self.service_name,
+            error_type=error_type,
+            error_code=error_code
+        ).inc()
+        
+    def track_transaction(self, status: str, processing_time: float, discrepancy_type: str = None):
+        """Track business transaction metrics"""
+        track_business_metrics(status, processing_time, self.service_name, discrepancy_type)

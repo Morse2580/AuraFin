@@ -53,7 +53,7 @@ DIM_MODEL_CONFIG = {
         },
         {
             "name": ModelTier.LAYOUTLM.value,
-            "enabled": os.getenv("DIM_MODE") == "production",
+            "enabled": True,  # Enable in all modes for testing
             "confidence_threshold": 0.7,
             "cost_per_document": 0.001,
             "model_path": "models/layoutlmv3-base.onnx",

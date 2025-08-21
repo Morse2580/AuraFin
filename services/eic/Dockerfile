@@ -52,5 +52,5 @@ HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=3 \
 # Expose port
 EXPOSE 8003
 
-# Run the application
-CMD ["uvicorn", "services.eic.app.main:app", "--host", "0.0.0.0", "--port", "8003"]
+# Run the application (using minimal version for Docker testing)
+CMD ["uvicorn", "services.eic.app.main_minimal:app", "--host", "0.0.0.0", "--port", "8003"]

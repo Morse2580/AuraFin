@@ -1,31 +1,39 @@
-# DIM Service - Production ML Stack (NO PYTORCH!)
+# DIM Service - Ultra Clean Production (No PyTorch!)
 
-# Core FastAPI Stack
+# Core FastAPI
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
-pydantic==2.11.7
-pydantic_settings==2.10.1
+pydantic>=2.0,<3.0
+pydantic_settings>=2.0,<3.0
 
 # Database & HTTP
-asyncpg==0.30.0
-httpx==0.28.1
+asyncpg>=0.28.0
+httpx>=0.24.0
 
-# Core ML Stack (Lightweight)
-onnxruntime==1.15.0
-transformers==4.45.2
-numpy==2.3.2
+# ONNX Runtime ONLY (No PyTorch!)
+onnxruntime>=1.15.0,<2.0
 
-# Azure ML Services
-azure-ai-formrecognizer==3.3.3
-azure-core==1.35.0
-azure-identity==1.24.0
+# Minimal transformers (tokenizer only)
+tokenizers>=0.20.0,<1.0
+huggingface_hub>=0.20.0,<1.0
+
+# Basic ML
+numpy>=1.24.0,<2.0
+
+# Azure Services
+azure-ai-formrecognizer>=3.3.0
+azure-core>=1.26.0
+azure-identity>=1.12.0
 
 # Utilities
-python-dotenv==1.1.1
-regex==2025.7.34
-prometheus-client==0.22.1
+python-dotenv>=1.0.0
+prometheus-client>=0.20.0
+regex>=2023.0.0
 
-# Text Processing
-huggingface_hub==0.34.4
+# Environment
+typing-extensions>=4.5.0
 
-# NO PYTORCH - NO TORCH - NO TORCHVISION - NO HEAVY ML!
+# Explicitly NO PyTorch dependencies
+# torch - EXCLUDED
+# torchvision - EXCLUDED  
+# torchaudio - EXCLUDED
